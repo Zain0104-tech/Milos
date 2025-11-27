@@ -421,7 +421,7 @@
             </div>
         </div>
         <div id="itinerary-list">
-            </div>
+        </div>
     </div>
 
     <div id="map"></div>
@@ -447,7 +447,8 @@
                     method_en: "High-speed Rail",
                     duration: "1.5h",
                     desc_cn: "约1.5小时 (前往常州)",
-                    desc_en: "~1.5 Hours (to Changzhou)"
+                    desc_en: "~1.5 Hours (to Changzhou)",
+                    travel_time_days: 0.5 // Transport time is needed for calculation on the next stop
                 }
             },
             {
@@ -482,7 +483,8 @@
                     method_en: "High-speed Rail / Bus",
                     duration: "4h",
                     desc_cn: "约4小时 (0.5天)",
-                    desc_en: "~4 Hours (0.5 Day)"
+                    desc_en: "~4 Hours (0.5 Day)",
+                    travel_time_days: 0.5
                 }
             },
             {
@@ -509,7 +511,8 @@
                     method_en: "Coach Transfer",
                     duration: "5h",
                     desc_cn: "约5小时 (0.5天)",
-                    desc_en: "~5 Hours (0.5 Day)"
+                    desc_en: "~5 Hours (0.5 Day)",
+                    travel_time_days: 0.5
                 }
             },
             {
@@ -544,7 +547,8 @@
                     method_en: "High-speed Rail",
                     duration: "10h",
                     desc_cn: "约10小时 (1天)",
-                    desc_en: "~10 Hours (1 Day)"
+                    desc_en: "~10 Hours (1 Day)",
+                    travel_time_days: 1
                 }
             },
             {
@@ -584,47 +588,42 @@
         // --- Date Calculation ---
         function calculateItineraryDates(itinerary, startDateStr, bufferDays) {
             const startDate = new Date(startDateStr);
-            let currentDay = 0; // Days passed from the start date (0 is Dec 1st)
+            let currentDayIndex = 0; // 0 means Day 1 (Dec 1st), 1 means Day 2, etc.
 
-            let totalTripDays = 0; // Actual travel + stay
-            let accumulatedStay = 0;
-            let accumulatedTravel = 0;
+            let totalStay = 0;
+            let totalTravel = 0;
 
             itinerary.forEach((stop, index) => {
+                // Calculate Arrival Date: Based on currentDayIndex
                 const arrivalDate = new Date(startDate);
-                arrivalDate.setDate(startDate.getDate() + currentDay);
+                arrivalDate.setDate(startDate.getDate() + currentDayIndex);
                 stop.arrivalDate = arrivalDate;
                 
-                if (stop.stay_days > 0) {
-                    const departureDate = new Date(arrivalDate);
-                    departureDate.setDate(arrivalDate.getDate() + stop.stay_days -1); // -1 because arrival day is day 0 of stay
-                    stop.departureDate = departureDate;
-                    accumulatedStay += stop.stay_days;
-                } else {
-                    stop.departureDate = arrivalDate; // For origin/travel days, departure is same as arrival
-                }
+                // Add Stay Days
+                currentDayIndex += stop.stay_days;
+                totalStay += stop.stay_days;
                 
-                currentDay += stop.stay_days; // Add stay days
+                // Add Travel Days for the *next* segment
                 if (stop.transport) {
-                    currentDay += stop.transport.travel_time_days; // Add travel days for next segment
-                    accumulatedTravel += stop.transport.travel_time_days;
+                    currentDayIndex += stop.transport.travel_time_days;
+                    totalTravel += stop.transport.travel_time_days;
                 }
             });
 
             // Calculate total days including travel and stay, but excluding buffer
-            totalTripDays = currentDay; 
+            const totalActualDays = totalStay + totalTravel; 
             
-            // Add buffer days to the end
-            const finalDepartureDate = new Date(startDate);
-            finalDepartureDate.setDate(startDate.getDate() + totalTripDays - 1 + bufferDays);
+            // Calculate End Date including Buffer Days
+            const finalTripEndDate = new Date(startDate);
+            finalTripEndDate.setDate(startDate.getDate() + totalActualDays + bufferDays - 1); // -1 because index starts at 0
 
             return {
                 processedItinerary: itinerary,
-                totalActualDays: totalTripDays, // Total days from start to last inspection/travel day
-                totalTripDuration: totalTripDays + bufferDays, // Total days including buffer
-                finalTripEndDate: finalDepartureDate, // End date including buffer
-                accumulatedStay: accumulatedStay,
-                accumulatedTravel: accumulatedTravel
+                totalActualDays: totalActualDays, 
+                totalTripDuration: totalActualDays + bufferDays, 
+                finalTripEndDate: finalTripEndDate,
+                totalStay: totalStay,
+                totalTravel: totalTravel
             };
         }
 
@@ -651,22 +650,25 @@
         // --- Update Header Trip Details ---
         document.getElementById('startDate').textContent = new Date(START_DATE_STR).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', year: 'numeric' });
         document.getElementById('endDate').textContent = finalTripEndDate.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', year: 'numeric' });
-        document.getElementById('totalDays').textContent = `${totalActualDays} 天 (${totalTripDuration} 含容错)`;
-        document.getElementById('bufferDays').textContent = `${BUFFER_DAYS} 天`;
+        document.getElementById('totalDays').textContent = `${totalActualDays} 天`;
+        document.getElementById('bufferDays').textContent = `${BUFFER_DAYS} 天 (共 ${totalTripDuration} 天)`;
 
 
         // --- Render Loop ---
         processedItinerary.forEach((stop, index) => {
             const isOrigin = (stop.id === 0);
-            const isBufferStop = (index === processedItinerary.length - 1 && BUFFER_DAYS > 0); // Last actual stop + buffer
-
+            
             // 1. Sidebar Card
             const card = document.createElement('div');
             card.className = 'stop-card';
             if (isOrigin) card.classList.add('origin-stop');
-            if (isBufferStop) card.classList.add('buffer-stop'); // Add class for buffer card if needed
             card.id = `card-${stop.id}`;
             
+            // Format Date
+            const dateStr = stop.arrivalDate.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+            const dayOfWeek = stop.arrivalDate.toLocaleDateString('zh-CN', { weekday: 'short' });
+            const stayDesc = stop.stay_days > 0 ? `${stop.stay_days} 天` : '出发/抵达';
+
             const enterprisesHtml = stop.enterprises.length > 0 ? stop.enterprises.map(ent => `
                 <div class="enterprise-item">
                     <div class="ent-name">
@@ -687,13 +689,13 @@
                         </div>
                     </div>
                 </div>
-            `).join('') : '';
+            `).join('') : (isOrigin ? `<div style="padding-top:10px; color:var(--text-sub); font-size:0.9rem;">非考察站，仅作出发地标记。</div>` : '');
 
             let transportIcon = '';
             if (stop.transport) {
                 if (stop.transport.method_cn.includes('高铁')) transportIcon = '<i class="fas fa-train"></i>';
                 else if (stop.transport.method_cn.includes('大巴')) transportIcon = '<i class="fas fa-bus"></i>';
-                else transportIcon = '<i class="fas fa-plane"></i>'; // Default for general travel
+                else transportIcon = '<i class="fas fa-plane"></i>';
             }
             
             const transportClass = stop.transport === null ? 'end-stop' : '';
@@ -702,4 +704,132 @@
                     ${transportIcon} ${isOrigin ? '前往下一站 / Next' : '交通 / Transport'}: ${stop.transport.method_cn}
                     <small>${stop.transport.method_en} (${stop.transport.desc_en})</small>
                 </div>
-            ` : `<div class="transport-info end-stop">
+            ` : `<div class="transport-info end-stop"><i class="fas fa-flag-checkered"></i> **行程结束**</div>`;
+
+            card.innerHTML = `
+                <div class="stop-header">
+                    <div class="city-info">
+                        <div class="city-name">
+                            ${stop.city_cn}
+                            <small>${stop.city_en}</small>
+                        </div>
+                    </div>
+                    <div class="date-tag ${isOrigin ? 'origin' : ''}">
+                        ${dateStr}
+                        <small>${stayDesc} (${dayOfWeek})</small>
+                    </div>
+                </div>
+                ${enterprisesHtml}
+                ${transportHtml}
+            `;
+
+            card.addEventListener('click', () => focusOnStop(stop.id));
+            itineraryList.appendChild(card);
+            
+            // 2. Map Marker
+            const pulseClass = isOrigin ? 'origin' : '';
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div class="marker-pulse ${pulseClass}"></div><div class="marker-pin ${pulseClass}"></div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+
+            const marker = L.marker([stop.coords.lat, stop.coords.lng], { icon: customIcon }).addTo(map);
+            
+            const enterprisesList = stop.enterprises.length > 0 ? stop.enterprises.map(e => `<div>• ${e.name_cn}</div>`).join('') : '<div style="color:#94a3b8;">(非考察站 / Non-inspection Stop)</div>';
+            
+            const popupHtml = `
+                <div class="popup-title">${stop.city_cn} (${stop.status_cn})</div>
+                <div class="popup-date">抵达日期: ${dateStr} | 停留: ${stop.stay_days} 天</div>
+                <div class="popup-enterprises">
+                    ${enterprisesList}
+                </div>
+            `;
+            marker.bindPopup(popupHtml);
+            marker.on('click', () => highlightCard(stop.id));
+            
+            markers[stop.id] = marker;
+            latlngs.push([stop.coords.lat, stop.coords.lng]);
+
+            // 3. Route Line (Ant Path)
+            if (index < processedItinerary.length - 1) {
+                const nextStop = processedItinerary[index + 1];
+                const routePoints = [[stop.coords.lat, stop.coords.lng], [nextStop.coords.lat, nextStop.coords.lng]];
+                
+                // --- FIX: Enhanced Ant Path Configuration for Clear Motion ---
+                L.polyline.antPath(routePoints, {
+                    "delay": 800, // 稍微慢一些，更容易看出动画
+                    "dashArray": [15, 30], // 较大的虚线和间距，确保运动明显
+                    "weight": 6, // 路线加粗
+                    "color": "#fd7e14",
+                    "pulseColor": "#ffffff",
+                    "opacity": 1.0, // 确保完全可见
+                    "paused": false 
+                }).addTo(map);
+
+                // Transport Label
+                const midLat = (stop.coords.lat + nextStop.coords.lat) / 2;
+                const midLng = (stop.coords.lng + nextStop.coords.lng) / 2;
+                
+                const labelIcon = L.divIcon({
+                    className: 'label-container',
+                    html: `<div class="route-label">${stop.transport.duration}<span>Travel</span></div>`,
+                    iconSize: [80, 40],
+                    iconAnchor: [40, 20]
+                });
+                L.marker([midLat, midLng], { icon: labelIcon, interactive: false, zIndexOffset: 1000 }).addTo(map);
+            }
+        });
+
+        // 4. Add Buffer Time Card (Final Day)
+        const finalBufferDate = finalTripEndDate.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+        const bufferCard = document.createElement('div');
+        bufferCard.className = 'stop-card';
+        bufferCard.innerHTML = `
+            <div class="stop-header">
+                <div class="city-info">
+                    <div class="city-name" style="color:var(--route-color);">
+                        行程容错/缓冲期
+                        <small>Contingency/Buffer Time</small>
+                    </div>
+                </div>
+                <div class="date-tag error-time">
+                    - ${finalBufferDate}
+                    <small>共 ${BUFFER_DAYS} 天</small>
+                </div>
+            </div>
+            <div style="font-size:0.9rem; color:var(--text-sub);">
+                这两天预留用于行程延误、深度交流或返程前的准备。
+            </div>
+            <div class="transport-info end-stop" style="margin-top:10px;">
+                <i class="fas fa-check-circle"></i> **行程圆满结束**
+            </div>
+        `;
+        itineraryList.appendChild(bufferCard);
+
+
+        // Fit Bounds
+        map.fitBounds(latlngs, { padding: [80, 80] });
+
+        // --- Interaction Functions ---
+        function focusOnStop(id) {
+            highlightCard(id);
+            const stop = processedItinerary.find(s => s.id === id);
+            if (stop) {
+                map.flyTo([stop.coords.lat, stop.coords.lng], 9, { duration: 1.2 });
+                markers[id].openPopup();
+            }
+        }
+
+        function highlightCard(id) {
+            document.querySelectorAll('.stop-card').forEach(el => el.classList.remove('active'));
+            const card = document.getElementById(`card-${id}`);
+            if (card) {
+                card.classList.add('active');
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    </script>
+</body>
+</html>
