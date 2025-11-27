@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itinerary: Melamine Lamination Tech Tour / 三聚氰胺层压技术考察行程</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Light Theme Variables */
+            --bg-color: #f1f5f9;      /* Light Grey Background */
+            --sidebar-bg: #ffffff;    /* White Sidebar */
+            --text-main: #0f172a;     /* Dark Blue-Black Text */
+            --text-sub: #64748b;      /* Grey Subtext */
+            --accent-color: #0369a1;  /* Professional Blue */
+            --route-color: #ea580c;   /* Orange for Route visibility */
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* --- Sidebar Layout --- */
+        #sidebar {
+            width: 420px; /* Slightly wider for bilingual text */
+            height: 100%;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            background: #fff;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.25rem;
+            margin: 0 0 8px 0;
+            font-weight: 700;
+            color: var(--accent-color);
+            line-height: 1.3;
+        }
+
+        .sidebar-header p {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            margin: 0;
+        }
+
+        #itinerary-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: var(--bg-color);
+        }
+
+        /* --- Cards --- */
+        .stop-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid transparent;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .stop-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .stop-card.active {
+            border-left: 4px solid var(--accent-color);
+            border-color: var(--accent-color);
+            background: #f0f9ff; /* Very light blue */
+        }
+
+        .stop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .city-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.2;
+        }
+        .city-name small {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        .stay-tag {
+            font-size: 0.75rem;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: right;
+        }
+        .stay-tag small {
+            display: block;
+            font-weight: 400;
+        }
+
+        /* Enterprise Items */
+        .enterprise-item {
+            margin-top: 12px;
+        }
+
+        .ent-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+        .ent-name small {
+            color: #64748b;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+
+        .info-row {
+            font-size: 0.8rem;
+            color: #475569;
+            margin-bottom: 6px;
+            line-height: 1.5;
+            display: flex;
+            gap: 6px;
+        }
+        
+        .info-label {
+            min-width: 40px;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .en-text {
+            display: block;
+            font-size: 0.75rem; /* Smaller English text */
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        /* Transport Info */
+        .transport-info {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-color);
+            font-size: 0.8rem;
+            color: var(--route-color);
+            font-weight: 600;
+        }
+        .transport-info small {
+            color: var(--route-color);
+            opacity: 0.8;
+            font-weight: 400;
+        }
+        .transport-info.end-stop {
+            border-top: 1px dashed transparent;
+            color: var(--text-sub);
+        }
+
+        /* --- Map Styling --- */
+        #map {
+            flex-grow: 1;
+            height: 100%;
+            background: #eef2f6;
+        }
+
+        /* Marker Styles */
+        .marker-pin {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            border: 2px solid #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* Special style for Origin Marker (ID 0) */
+        .marker-pin.origin {
+            background: #475569; /* Darker color for non-inspection point */
+            border: 2px solid #fff;
+        }
+        .marker-pulse.origin {
+             background: rgba(71, 85, 105, 0.5); /* Darker pulse */
+        }
+
+
+        .marker-pulse {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px; height: 16px;
+            background: rgba(3, 105, 161, 0.5);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { width: 16px; height: 16px; opacity: 0.8; }
+            100% { width: 48px; height: 48px; opacity: 0; }
+        }
+
+        /* Popup Styles */
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+        }
+        .leaflet-popup-content {
+            margin: 12px;
+            line-height: 1.5;
+        }
+        .popup-title {
+            font-weight: 700;
+            color: var(--accent-color);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+
+        /* Route Label */
+        .route-label {
+            background: #fff;
+            border: 1px solid var(--route-color);
+            color: var(--route-color);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            body { flex-direction: column-reverse; }
+            #sidebar { width: 100%; height: 45%; }
+            #map { height: 55%; }
+            .sidebar-header { padding: 15px; }
+            .sidebar-header h1 { font-size: 1.1rem; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h1>三聚氰胺层压技术考察行程</h1>
+            <p>Melamine Lamination Tech & Resource Tour</p>
+        </div>
+        <div id="itinerary-list">
+            </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-ant-path@1.3.0/dist/leaflet-ant-path.js"></script>
+
+    <script>
+        // --- Bilingual Data Structure ---
+        // ID 0: Shanghai (Departure Point)
+        const itineraryData = [
+            {
+                id: 0,
+                city_cn: "上海 (出发地/起点)",
+                city_en: "Shanghai (Departure/Origin)",
+                stay_cn: "抵达/换乘",
+                stay_en: "Arrival/Transfer",
+                coords: { lat: 31.2304, lng: 121.4737 },
+                enterprises: [], // No inspection stop per user request
+                transport: {
+                    method_cn: "高铁",
+                    method_en: "High-speed Rail",
+                    duration: "1.5h",
+                    desc_cn: "约1.5小时 (前往常州)",
+                    desc_en: "~1.5 Hours (to Changzhou)"
+                }
+            },
+            {
+                id: 1,
+                city_cn: "常州 (第一站)",
+                city_en: "Changzhou (1st Inspection Stop)",
+                stay_cn: "2天",
+                stay_en: "2 Days",
+                coords: { lat: 31.8112, lng: 119.9741 },
+                enterprises: [
+                    {
+                        name_cn: "温康纳 (常州) 机械制造",
+                        name_en: "Wemhoener (Changzhou) Machinery",
+                        core_cn: "全球短周期贴面设备龙头，高端定制适配性强",
+                        core_en: "Global leader in short-cycle press lines; High-end customization.",
+                        note_cn: "第五代智能贴面系统、红外激光对纹、闭式循环",
+                        note_en: "5th Gen intelligent system, EIR technology, Closed-loop system."
+                    },
+                    {
+                        name_cn: "常州圈丰智能装备",
+                        name_en: "Changzhou Quanfeng Intelligent",
+                        core_cn: "国产多层压机性价比标杆，适配中小企业升级",
+                        core_en: "Cost-effective multi-layer press benchmark for SME upgrades.",
+                        note_cn: "1400吨二手热压机、伺服液压节能、翻新服务",
+                        note_en: "1400T Used press, Servo hydraulic energy-saving, Refurbishment."
+                    }
+                ],
+                transport: {
+                    method_cn: "高铁/大巴",
+                    method_en: "High-speed Rail / Bus",
+                    duration: "4h",
+                    desc_cn: "约4小时 (0.5天)",
+                    desc_en: "~4 Hours (0.5 Day)"
+                }
+            },
+            {
+                id: 2,
+                city_cn: "江苏宿迁 (第二站)",
+                city_en: "Suqian, Jiangsu (2nd Stop)",
+                stay_cn: "1天",
+                stay_en: "1 Day",
+                coords: { lat: 33.9630, lng: 118.2753 },
+                enterprises: [
+                    {
+                        name_cn: "大亚人造板",
+                        name_en: "Dare Global Wood",
+                        core_cn: "人造板智能制造标杆，数字化经验可复制",
+                        core_en: "Benchmark for smart manufacturing; Replicable digital experience.",
+                        note_cn: "5G智能车间、能源管理系统、50万m³连续压机",
+                        note_en: "5G Smart workshop, EMS, 500k m³/yr continuous press line."
+                    }
+                ],
+                transport: {
+                    method_cn: "大巴转车",
+                    method_en: "Coach Transfer",
+                    duration: "5h",
+                    desc_cn: "约5小时 (0.5天)",
+                    desc_en: "~5 Hours (0.5 Day)"
+                }
+            },
+            {
+                id: 3,
+                city_cn: "山东产业带 (临沂/菏泽)",
+                city_en: "Shandong (Linyi/Heze, 3rd Stop)",
+                stay_cn: "2天",
+                stay_en: "2 Days",
+                coords: { lat: 35.1047, lng: 118.3566 },
+                enterprises: [
+                    {
+                        name_cn: "佐许辛格机械 (Xingger)",
+                        name_en: "Xingger Machinery",
+                        core_cn: "国产层压设备中端市场主力，定制化适配强",
+                        core_en: "Mainstay of mid-market domestic lamination equipment.",
+                        note_cn: "模块化三聚氰胺热压机、短周期产线、运维培训",
+                        note_en: "Modular melamine press, Short-cycle line, Maintenance training."
+                    },
+                    {
+                        name_cn: "鲁南二手木业设备市场",
+                        name_en: "Lunan Second-hand Market",
+                        core_cn: "北方最大木业二手设备交易集散地，高性价比",
+                        core_en: "Largest used wood machinery market in North; High cost-performance.",
+                        note_cn: "二手连续压机/热压机成色检查、部件损耗评估",
+                        note_en: "Condition check of used presses, Component wear assessment."
+                    }
+                ],
+                transport: {
+                    method_cn: "高铁",
+                    method_en: "High-speed Rail",
+                    duration: "10h",
+                    desc_cn: "约10小时 (1天)",
+                    desc_en: "~10 Hours (1 Day)"
+                }
+            },
+            {
+                id: 4,
+                city_cn: "广西 (第四站)",
+                city_en: "Guangxi (4th Stop)",
+                stay_cn: "2天",
+                stay_en: "2 Days",
+                coords: { lat: 22.8170, lng: 108.3665 },
+                enterprises: [
+                    {
+                        name_cn: "广西丰林集团",
+                        name_en: "Guangxi Fenglin Group",
+                        core_cn: "华南人造板龙头，热带木材加工技术成熟",
+                        core_en: "South China leader; Mature tropical wood processing tech.",
+                        note_cn: "30万m³胶合板层压线、生物质能源、出口工艺",
+                        note_en: "300k m³ Plywood lamination line, Biomass energy, Export std."
+                    },
+                    {
+                        name_cn: "三威新材",
+                        name_en: "Sanwei New Materials",
+                        core_cn: "高端装饰板材制造商，层压工艺精细化",
+                        core_en: "High-end decorative board mfr; Refined lamination process.",
+                        note_cn: "高端饰面刨花板产线、纹理仿真、VOCs处理",
+                        note_en: "High-end PB line, Texture simulation, VOCs treatment."
+                    }
+                ],
+                transport: null
+            }
+        ];
+
+        // --- Init Map (Light Theme) ---
+        const map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false
+        });
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // CartoDB Positron (Clean Light Map)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        const markers = {};
+        const latlngs = [];
+        const itineraryList = document.getElementById('itinerary-list');
+
+        // --- Render Loop ---
+        itineraryData.forEach((stop, index) => {
+            const isOrigin = (stop.id === 0);
+
+            // 1. Sidebar Card
+            const card = document.createElement('div');
+            card.className = 'stop-card';
+            if (isOrigin) {
+                card.classList.add('origin-stop');
+            }
+            card.id = `card-${stop.id}`;
+            
+            // Render Enterprise details only for inspection stops (id > 0)
+            const enterprisesHtml = stop.enterprises.length > 0 ? stop.enterprises.map(ent => `
+                <div class="enterprise-item">
+                    <div class="ent-name">
+                        ${ent.name_cn} <small>${ent.name_en}</small>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">核心:</span>
+                        <div>
+                            ${ent.core_cn}
+                            <span class="en-text">${ent.core_en}</span>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">重点:</span>
+                        <div>
+                            ${ent.note_cn}
+                            <span class="en-text">${ent.note_en}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('') : '';
+
+            const transportClass = stop.transport === null ? 'end-stop' : '';
+            const transportHtml = stop.transport ? `
+                <div class="transport-info ${transportClass}">
+                    ▼ ${isOrigin ? '前往下一站 / Next' : '交通 / Transport'}: ${stop.transport.method_cn}
+                    <small>${stop.transport.method_en} (${stop.transport.desc_en})</small>
+                </div>
+            ` : `<div class="transport-info end-stop">行程结束 / Trip End</div>`;
+
+            card.innerHTML = `
+                <div class="stop-header">
+                    <div class="city-name">
+                        ${stop.city_cn}
+                        <small>${stop.city_en}</small>
+                    </div>
+                    <div class="stay-tag">
+                        ${stop.stay_cn}
+                        <small>${stop.stay_en}</small>
+                    </div>
+                </div>
+                ${enterprisesHtml}
+                ${transportHtml}
+            `;
+
+            card.addEventListener('click', () => focusOnStop(stop.id));
+            itineraryList.appendChild(card);
+
+            // 2. Map Marker
+            const pulseClass = isOrigin ? 'origin' : '';
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div class="marker-pulse ${pulseClass}"></div><div class="marker-pin ${pulseClass}"></div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+
+            const marker = L.marker([stop.coords.lat, stop.coords.lng], { icon: customIcon }).addTo(map);
+            
+            const enterprisesList = stop.enterprises.length > 0 ? stop.enterprises.map(e => `<div>• ${e.name_cn}</div>`).join('') : '<div style="color:#94a3b8;">(非考察站 / Non-inspection Stop)</div>';
+            
+            const popupHtml = `
+                <div class="popup-title">${stop.city_cn}</div>
+                <div style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">${stop.city_en} | 停留: ${stop.stay_en}</div>
+                ${enterprisesList}
+            `;
+            marker.bindPopup(popupHtml);
+            marker.on('click', () => highlightCard(stop.id));
+            
+            markers[stop.id] = marker;
+            latlngs.push([stop.coords.lat, stop.coords.lng]);
+
+            // 3. Route Line
+            if (index < itineraryData.length - 1) {
+                const nextStop = itineraryData[index + 1];
+                const routePoints = [[stop.coords.lat, stop.coords.lng], [nextStop.coords.lat, nextStop.coords.lng]];
+
+                L.polyline.antPath(routePoints, {
+                    "delay": 1200,
+                    "dashArray": [12, 24],
+                    "weight": 4,
+                    "color": "#ea580c",
+                    "pulseColor": "#ffffff",
+                    "paused": false
+                }).addTo(map);
+
+                // Transport Label
+                const midLat = (stop.coords.lat + nextStop.coords.lat) / 2;
+                const midLng = (stop.coords.lng + nextStop.coords.lng) / 2;
+                
+                const labelIcon = L.divIcon({
+                    className: 'label-container',
+                    html: `<div class="route-label">${stop.transport.duration}<br><span style="font-size:0.6rem; font-weight:400">Travel</span></div>`,
+                    iconSize: [60, 30],
+                    iconAnchor: [30, 15]
+                });
+                L.marker([midLat, midLng], { icon: labelIcon, interactive: false, zIndexOffset: -100 }).addTo(map);
+            }
+        });
+
+        // Fit Bounds
+        map.fitBounds(latlngs, { padding: [80, 80] });
+
+        // --- Interaction Functions ---
+        function focusOnStop(id) {
+            highlightCard(id);
+            const stop = itineraryData.find(s => s.id === id);
+            if (stop) {
+                map.flyTo([stop.coords.lat, stop.coords.lng], 10, { duration: 1.2 });
+                markers[id].openPopup();
+            }
+        }
+
+        function highlightCard(id) {
+            document.querySelectorAll('.stop-card').forEach(el => el.classList.remove('active'));
+            const card = document.getElementById(`card-${id}`);
+            if (card) {
+                card.classList.add('active');
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    </script>
+</body>
+</html>
