@@ -3,21 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Itinerary: Melamine Lamination Tech Tour / 三聚氰胺层压技术考察行程</title>
+    <title>Melamine Tech Tour - Itinerary / 三聚氰胺技术考察行程</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <style>
         :root {
-            /* Light Theme Variables */
-            --bg-color: #f1f5f9;      /* Light Grey Background */
-            --sidebar-bg: #ffffff;    /* White Sidebar */
-            --text-main: #0f172a;     /* Dark Blue-Black Text */
-            --text-sub: #64748b;      /* Grey Subtext */
-            --accent-color: #0369a1;  /* Professional Blue */
-            --route-color: #ea580c;   /* Orange for Route visibility */
-            --border-color: #e2e8f0;
+            /* Tech-Business Theme Variables */
+            --bg-color: #f8fafc;        /* Lightest Grey Background */
+            --sidebar-bg: #ffffff;      /* White Sidebar */
+            --text-main: #1f2937;       /* Dark Grey Text */
+            --text-sub: #6b7280;        /* Medium Grey Subtext */
+            --accent-color: #0d6efd;    /* Royal Blue - Primary Tech Color */
+            --route-color: #fd7e14;     /* Bright Orange - Dynamic Contrast */
+            --border-color: #e5e7eb;    /* Light Grey Border */
+            --shadow-color: rgba(0, 0, 0, 0.05);
+            --shadow-hover: rgba(0, 0, 0, 0.1);
+            --active-bg: #e0f2fe;       /* Very light blue for active state */
+            --origin-color: #4b5563;    /* Darker grey for origin point */
         }
 
         body {
@@ -33,157 +38,229 @@
 
         /* --- Sidebar Layout --- */
         #sidebar {
-            width: 420px; /* Slightly wider for bilingual text */
+            width: 460px; /* Wider for better text flow and dates */
             height: 100%;
             background: var(--sidebar-bg);
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             z-index: 1000;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+            box-shadow: 4px 0 15px var(--shadow-color);
         }
 
         .sidebar-header {
-            padding: 24px;
-            background: #fff;
+            padding: 28px;
+            background: #ffffff;
             border-bottom: 1px solid var(--border-color);
         }
 
         .sidebar-header h1 {
-            font-size: 1.25rem;
-            margin: 0 0 8px 0;
+            font-size: 1.35rem;
+            margin: 0 0 10px 0;
             font-weight: 700;
             color: var(--accent-color);
             line-height: 1.3;
         }
 
         .sidebar-header p {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: var(--text-sub);
             margin: 0;
         }
+        .sidebar-header .trip-details {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .sidebar-header .trip-details div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar-header .trip-details .detail-label {
+            font-weight: 500;
+            color: var(--text-main);
+            min-width: 60px;
+        }
+        .sidebar-header .trip-details .detail-value {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+        .sidebar-header .trip-details .detail-value.error-time {
+            color: var(--route-color); /* Orange for容错 */
+        }
+        .sidebar-header .trip-details i {
+            color: var(--accent-color);
+            font-size: 1rem;
+        }
+        .sidebar-header .trip-details .error-time i {
+            color: var(--route-color);
+        }
+
 
         #itinerary-list {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 24px;
             background: var(--bg-color);
         }
 
         /* --- Cards --- */
         .stop-card {
-            background: #fff;
-            border-radius: 10px;
-            padding: 18px;
-            margin-bottom: 16px;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
             cursor: pointer;
             transition: all 0.2s ease;
             border: 1px solid var(--border-color);
-            border-left: 4px solid transparent;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            border-left: 5px solid transparent;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            position: relative;
         }
 
         .stop-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px var(--shadow-hover);
         }
 
         .stop-card.active {
-            border-left: 4px solid var(--accent-color);
+            border-left: 5px solid var(--accent-color);
             border-color: var(--accent-color);
-            background: #f0f9ff; /* Very light blue */
+            background: var(--active-bg);
         }
 
         .stop-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 12px;
-            padding-bottom: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
             border-bottom: 1px solid var(--border-color);
         }
 
+        .city-info {
+            flex-grow: 1;
+        }
+
         .city-name {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: 700;
             color: var(--text-main);
             line-height: 1.2;
         }
         .city-name small {
             display: block;
-            font-size: 0.85rem;
-            font-weight: 400;
+            font-size: 0.9rem;
+            font-weight: 500;
             color: var(--text-sub);
-            margin-top: 2px;
+            margin-top: 4px;
         }
-
-        .stay-tag {
-            font-size: 0.75rem;
-            background: #e0f2fe;
-            color: #0369a1;
-            padding: 4px 8px;
-            border-radius: 6px;
+        
+        .date-tag {
+            background: var(--accent-color);
+            color: #ffffff;
+            padding: 6px 12px;
+            border-radius: 8px;
             font-weight: 600;
             white-space: nowrap;
             text-align: right;
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 90px;
+            margin-left: 15px;
         }
-        .stay-tag small {
+        .date-tag small {
             display: block;
+            font-size: 0.75rem;
             font-weight: 400;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+        .date-tag.origin {
+            background: var(--origin-color);
+        }
+        .date-tag.error-time {
+            background: var(--route-color);
         }
 
         /* Enterprise Items */
         .enterprise-item {
-            margin-top: 12px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed var(--border-color);
+        }
+        .stop-card.origin-stop .enterprise-item {
+            border-top: none; /* No separator for origin if no enterprises */
+            padding-top: 0;
+            margin-top: 0;
         }
 
         .ent-name {
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-weight: 700;
-            color: #334155;
-            margin-bottom: 4px;
+            color: var(--text-main);
+            margin-bottom: 6px;
         }
         .ent-name small {
-            color: #64748b;
-            font-weight: 400;
-            margin-left: 4px;
+            color: var(--text-sub);
+            font-weight: 500;
+            margin-left: 6px;
         }
 
         .info-row {
-            font-size: 0.8rem;
-            color: #475569;
-            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            margin-bottom: 8px;
             line-height: 1.5;
             display: flex;
-            gap: 6px;
+            gap: 8px;
+            align-items: flex-start;
         }
         
         .info-label {
-            min-width: 40px;
+            min-width: 50px;
             font-weight: 600;
             color: var(--accent-color);
+            flex-shrink: 0;
         }
 
         .en-text {
             display: block;
-            font-size: 0.75rem; /* Smaller English text */
+            font-size: 0.75rem;
             color: #94a3b8;
-            margin-top: 2px;
+            margin-top: 4px;
         }
 
         /* Transport Info */
         .transport-info {
-            margin-top: 15px;
-            padding-top: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
             border-top: 1px dashed var(--border-color);
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             color: var(--route-color);
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .transport-info i {
+            font-size: 1.1rem;
+            color: var(--route-color);
         }
         .transport-info small {
             color: var(--route-color);
             opacity: 0.8;
             font-weight: 400;
+            font-size: 0.8rem;
         }
         .transport-info.end-stop {
             border-top: 1px dashed transparent;
@@ -199,86 +276,134 @@
 
         /* Marker Styles */
         .marker-pin {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             background: var(--accent-color);
-            border: 2px solid #fff;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border: 3px solid #ffffff;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
+            z-index: 1; /* Above pulse */
         }
         
-        /* Special style for Origin Marker (ID 0) */
         .marker-pin.origin {
-            background: #475569; /* Darker color for non-inspection point */
-            border: 2px solid #fff;
+            background: var(--origin-color); /* Darker color for origin point */
         }
-        .marker-pulse.origin {
-             background: rgba(71, 85, 105, 0.5); /* Darker pulse */
+        .marker-pin.error-time {
+            background: var(--route-color); /* Orange for error time marker */
         }
-
 
         .marker-pulse {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 16px; height: 16px;
-            background: rgba(3, 105, 161, 0.5);
+            width: 18px; height: 18px;
+            background: rgba(13, 110, 253, 0.4); /* Accent color with transparency */
             border-radius: 50%;
-            animation: pulse 2s infinite;
+            animation: pulse 2s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .marker-pulse.origin {
+             background: rgba(75, 85, 99, 0.4); /* Darker pulse for origin */
+        }
+        .marker-pulse.error-time {
+             background: rgba(253, 126, 20, 0.4); /* Orange pulse for error time */
         }
 
         @keyframes pulse {
-            0% { width: 16px; height: 16px; opacity: 0.8; }
-            100% { width: 48px; height: 48px; opacity: 0; }
+            0% { width: 18px; height: 18px; opacity: 0.8; }
+            100% { width: 56px; height: 56px; opacity: 0; }
         }
 
         /* Popup Styles */
         .leaflet-popup-content-wrapper {
-            border-radius: 8px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+            background: var(--sidebar-bg);
+            color: var(--text-main);
+            padding: 0;
         }
         .leaflet-popup-content {
-            margin: 12px;
+            margin: 15px;
             line-height: 1.5;
+            font-size: 0.9rem;
         }
         .popup-title {
             font-weight: 700;
             color: var(--accent-color);
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        .popup-date {
+            font-size: 0.85rem;
+            color: var(--text-sub);
             margin-bottom: 5px;
+        }
+        .popup-enterprises {
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+        .popup-enterprises div {
+            margin-bottom: 3px;
+        }
+        .leaflet-popup-tip-container {
+            width: 30px; /* Adjust tip size */
+            height: 15px;
+        }
+        .leaflet-popup-tip {
+            background: var(--sidebar-bg);
+            box-shadow: var(--shadow-color);
+            border: none;
+            width: 15px;
+            height: 15px;
+            margin-top: -8px; /* Position tip correctly */
+            transform: rotate(45deg);
         }
 
         /* Route Label */
         .route-label {
-            background: #fff;
+            background: #ffffff;
             border: 1px solid var(--route-color);
             color: var(--route-color);
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.75rem;
             font-weight: 600;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 3px 6px var(--shadow-color);
             white-space: nowrap;
             text-align: center;
+        }
+        .route-label span {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 400;
+            opacity: 0.8;
+            margin-top: 2px;
         }
 
         /* Mobile */
         @media (max-width: 768px) {
             body { flex-direction: column-reverse; }
-            #sidebar { width: 100%; height: 45%; }
-            #map { height: 55%; }
-            .sidebar-header { padding: 15px; }
-            .sidebar-header h1 { font-size: 1.1rem; }
+            #sidebar { width: 100%; height: 50%; }
+            #map { height: 50%; }
+            .sidebar-header { padding: 20px; }
+            .sidebar-header h1 { font-size: 1.2rem; }
+            .sidebar-header .trip-details { grid-template-columns: 1fr; }
+            #itinerary-list { padding: 15px; }
+            .stop-card { padding: 15px; margin-bottom: 15px; }
+            .city-name { font-size: 1.1rem; }
+            .city-name small { font-size: 0.8rem; }
+            .date-tag { font-size: 0.8rem; min-width: 80px; }
         }
 
         /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
@@ -288,6 +413,12 @@
         <div class="sidebar-header">
             <h1>三聚氰胺层压技术考察行程</h1>
             <p>Melamine Lamination Tech & Resource Tour</p>
+            <div class="trip-details">
+                <div><i class="fas fa-calendar-alt"></i> <span class="detail-label">开始:</span> <span id="startDate" class="detail-value"></span></div>
+                <div><i class="fas fa-calendar-check"></i> <span class="detail-label">结束:</span> <span id="endDate" class="detail-value"></span></div>
+                <div><i class="fas fa-route"></i> <span class="detail-label">总天数:</span> <span id="totalDays" class="detail-value"></span></div>
+                <div><i class="fas fa-exclamation-triangle"></i> <span class="detail-label">容错:</span> <span id="bufferDays" class="detail-value error-time"></span></div>
+            </div>
         </div>
         <div id="itinerary-list">
             </div>
@@ -300,16 +431,17 @@
 
     <script>
         // --- Bilingual Data Structure ---
-        // ID 0: Shanghai (Departure Point)
         const itineraryData = [
             {
                 id: 0,
-                city_cn: "上海 (出发地/起点)",
-                city_en: "Shanghai (Departure/Origin)",
-                stay_cn: "抵达/换乘",
-                stay_en: "Arrival/Transfer",
+                city_cn: "上海",
+                city_en: "Shanghai",
+                status_cn: "出发地",
+                status_en: "Origin",
+                stay_days: 0, // No stay for origin
+                travel_time_days: 0, // No travel before origin
                 coords: { lat: 31.2304, lng: 121.4737 },
-                enterprises: [], // No inspection stop per user request
+                enterprises: [],
                 transport: {
                     method_cn: "高铁",
                     method_en: "High-speed Rail",
@@ -320,10 +452,12 @@
             },
             {
                 id: 1,
-                city_cn: "常州 (第一站)",
-                city_en: "Changzhou (1st Inspection Stop)",
-                stay_cn: "2天",
-                stay_en: "2 Days",
+                city_cn: "常州",
+                city_en: "Changzhou",
+                status_cn: "第一站",
+                status_en: "1st Inspection Stop",
+                stay_days: 2,
+                travel_time_days: 0.5, // 4 hours travel from Shanghai (~0.5 day)
                 coords: { lat: 31.8112, lng: 119.9741 },
                 enterprises: [
                     {
@@ -353,10 +487,12 @@
             },
             {
                 id: 2,
-                city_cn: "江苏宿迁 (第二站)",
-                city_en: "Suqian, Jiangsu (2nd Stop)",
-                stay_cn: "1天",
-                stay_en: "1 Day",
+                city_cn: "江苏宿迁",
+                city_en: "Suqian, Jiangsu",
+                status_cn: "第二站",
+                status_en: "2nd Inspection Stop",
+                stay_days: 1,
+                travel_time_days: 0.5, // 5 hours travel from Changzhou (~0.5 day)
                 coords: { lat: 33.9630, lng: 118.2753 },
                 enterprises: [
                     {
@@ -379,9 +515,11 @@
             {
                 id: 3,
                 city_cn: "山东产业带 (临沂/菏泽)",
-                city_en: "Shandong (Linyi/Heze, 3rd Stop)",
-                stay_cn: "2天",
-                stay_en: "2 Days",
+                city_en: "Shandong (Linyi/Heze)",
+                status_cn: "第三站",
+                status_en: "3rd Inspection Stop",
+                stay_days: 2,
+                travel_time_days: 1, // 10 hours travel from Suqian (~1 day)
                 coords: { lat: 35.1047, lng: 118.3566 },
                 enterprises: [
                     {
@@ -411,10 +549,12 @@
             },
             {
                 id: 4,
-                city_cn: "广西 (第四站)",
-                city_en: "Guangxi (4th Stop)",
-                stay_cn: "2天",
-                stay_en: "2 Days",
+                city_cn: "广西",
+                city_en: "Guangxi",
+                status_cn: "第四站",
+                status_en: "4th Inspection Stop",
+                stay_days: 2,
+                travel_time_days: 1, // 10 hours travel from Shandong (~1 day)
                 coords: { lat: 22.8170, lng: 108.3665 },
                 enterprises: [
                     {
@@ -434,9 +574,61 @@
                         note_en: "High-end PB line, Texture simulation, VOCs treatment."
                     }
                 ],
-                transport: null
+                transport: null // End of trip
             }
         ];
+
+        const START_DATE_STR = "2023-12-01"; // 旅行开始日期
+        const BUFFER_DAYS = 2; // 容错时间
+
+        // --- Date Calculation ---
+        function calculateItineraryDates(itinerary, startDateStr, bufferDays) {
+            const startDate = new Date(startDateStr);
+            let currentDay = 0; // Days passed from the start date (0 is Dec 1st)
+
+            let totalTripDays = 0; // Actual travel + stay
+            let accumulatedStay = 0;
+            let accumulatedTravel = 0;
+
+            itinerary.forEach((stop, index) => {
+                const arrivalDate = new Date(startDate);
+                arrivalDate.setDate(startDate.getDate() + currentDay);
+                stop.arrivalDate = arrivalDate;
+                
+                if (stop.stay_days > 0) {
+                    const departureDate = new Date(arrivalDate);
+                    departureDate.setDate(arrivalDate.getDate() + stop.stay_days -1); // -1 because arrival day is day 0 of stay
+                    stop.departureDate = departureDate;
+                    accumulatedStay += stop.stay_days;
+                } else {
+                    stop.departureDate = arrivalDate; // For origin/travel days, departure is same as arrival
+                }
+                
+                currentDay += stop.stay_days; // Add stay days
+                if (stop.transport) {
+                    currentDay += stop.transport.travel_time_days; // Add travel days for next segment
+                    accumulatedTravel += stop.transport.travel_time_days;
+                }
+            });
+
+            // Calculate total days including travel and stay, but excluding buffer
+            totalTripDays = currentDay; 
+            
+            // Add buffer days to the end
+            const finalDepartureDate = new Date(startDate);
+            finalDepartureDate.setDate(startDate.getDate() + totalTripDays - 1 + bufferDays);
+
+            return {
+                processedItinerary: itinerary,
+                totalActualDays: totalTripDays, // Total days from start to last inspection/travel day
+                totalTripDuration: totalTripDays + bufferDays, // Total days including buffer
+                finalTripEndDate: finalDepartureDate, // End date including buffer
+                accumulatedStay: accumulatedStay,
+                accumulatedTravel: accumulatedTravel
+            };
+        }
+
+        const { processedItinerary, totalActualDays, totalTripDuration, finalTripEndDate } = calculateItineraryDates(itineraryData, START_DATE_STR, BUFFER_DAYS);
 
         // --- Init Map (Light Theme) ---
         const map = L.map('map', {
@@ -456,19 +648,25 @@
         const latlngs = [];
         const itineraryList = document.getElementById('itinerary-list');
 
+        // --- Update Header Trip Details ---
+        document.getElementById('startDate').textContent = new Date(START_DATE_STR).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', year: 'numeric' });
+        document.getElementById('endDate').textContent = finalTripEndDate.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', year: 'numeric' });
+        document.getElementById('totalDays').textContent = `${totalActualDays} 天 (${totalTripDuration} 含容错)`;
+        document.getElementById('bufferDays').textContent = `${BUFFER_DAYS} 天`;
+
+
         // --- Render Loop ---
-        itineraryData.forEach((stop, index) => {
+        processedItinerary.forEach((stop, index) => {
             const isOrigin = (stop.id === 0);
+            const isBufferStop = (index === processedItinerary.length - 1 && BUFFER_DAYS > 0); // Last actual stop + buffer
 
             // 1. Sidebar Card
             const card = document.createElement('div');
             card.className = 'stop-card';
-            if (isOrigin) {
-                card.classList.add('origin-stop');
-            }
+            if (isOrigin) card.classList.add('origin-stop');
+            if (isBufferStop) card.classList.add('buffer-stop'); // Add class for buffer card if needed
             card.id = `card-${stop.id}`;
             
-            // Render Enterprise details only for inspection stops (id > 0)
             const enterprisesHtml = stop.enterprises.length > 0 ? stop.enterprises.map(ent => `
                 <div class="enterprise-item">
                     <div class="ent-name">
@@ -491,106 +689,17 @@
                 </div>
             `).join('') : '';
 
+            let transportIcon = '';
+            if (stop.transport) {
+                if (stop.transport.method_cn.includes('高铁')) transportIcon = '<i class="fas fa-train"></i>';
+                else if (stop.transport.method_cn.includes('大巴')) transportIcon = '<i class="fas fa-bus"></i>';
+                else transportIcon = '<i class="fas fa-plane"></i>'; // Default for general travel
+            }
+            
             const transportClass = stop.transport === null ? 'end-stop' : '';
             const transportHtml = stop.transport ? `
                 <div class="transport-info ${transportClass}">
-                    ▼ ${isOrigin ? '前往下一站 / Next' : '交通 / Transport'}: ${stop.transport.method_cn}
+                    ${transportIcon} ${isOrigin ? '前往下一站 / Next' : '交通 / Transport'}: ${stop.transport.method_cn}
                     <small>${stop.transport.method_en} (${stop.transport.desc_en})</small>
                 </div>
-            ` : `<div class="transport-info end-stop">行程结束 / Trip End</div>`;
-
-            card.innerHTML = `
-                <div class="stop-header">
-                    <div class="city-name">
-                        ${stop.city_cn}
-                        <small>${stop.city_en}</small>
-                    </div>
-                    <div class="stay-tag">
-                        ${stop.stay_cn}
-                        <small>${stop.stay_en}</small>
-                    </div>
-                </div>
-                ${enterprisesHtml}
-                ${transportHtml}
-            `;
-
-            card.addEventListener('click', () => focusOnStop(stop.id));
-            itineraryList.appendChild(card);
-
-            // 2. Map Marker
-            const pulseClass = isOrigin ? 'origin' : '';
-            const customIcon = L.divIcon({
-                className: 'custom-marker',
-                html: `<div class="marker-pulse ${pulseClass}"></div><div class="marker-pin ${pulseClass}"></div>`,
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
-            });
-
-            const marker = L.marker([stop.coords.lat, stop.coords.lng], { icon: customIcon }).addTo(map);
-            
-            const enterprisesList = stop.enterprises.length > 0 ? stop.enterprises.map(e => `<div>• ${e.name_cn}</div>`).join('') : '<div style="color:#94a3b8;">(非考察站 / Non-inspection Stop)</div>';
-            
-            const popupHtml = `
-                <div class="popup-title">${stop.city_cn}</div>
-                <div style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">${stop.city_en} | 停留: ${stop.stay_en}</div>
-                ${enterprisesList}
-            `;
-            marker.bindPopup(popupHtml);
-            marker.on('click', () => highlightCard(stop.id));
-            
-            markers[stop.id] = marker;
-            latlngs.push([stop.coords.lat, stop.coords.lng]);
-
-            // 3. Route Line
-            if (index < itineraryData.length - 1) {
-                const nextStop = itineraryData[index + 1];
-                const routePoints = [[stop.coords.lat, stop.coords.lng], [nextStop.coords.lat, nextStop.coords.lng]];
-
-                L.polyline.antPath(routePoints, {
-                    "delay": 1200,
-                    "dashArray": [12, 24],
-                    "weight": 4,
-                    "color": "#ea580c",
-                    "pulseColor": "#ffffff",
-                    "paused": false
-                }).addTo(map);
-
-                // Transport Label
-                const midLat = (stop.coords.lat + nextStop.coords.lat) / 2;
-                const midLng = (stop.coords.lng + nextStop.coords.lng) / 2;
-                
-                const labelIcon = L.divIcon({
-                    className: 'label-container',
-                    html: `<div class="route-label">${stop.transport.duration}<br><span style="font-size:0.6rem; font-weight:400">Travel</span></div>`,
-                    iconSize: [60, 30],
-                    iconAnchor: [30, 15]
-                });
-                L.marker([midLat, midLng], { icon: labelIcon, interactive: false, zIndexOffset: -100 }).addTo(map);
-            }
-        });
-
-        // Fit Bounds
-        map.fitBounds(latlngs, { padding: [80, 80] });
-
-        // --- Interaction Functions ---
-        function focusOnStop(id) {
-            highlightCard(id);
-            const stop = itineraryData.find(s => s.id === id);
-            if (stop) {
-                map.flyTo([stop.coords.lat, stop.coords.lng], 10, { duration: 1.2 });
-                markers[id].openPopup();
-            }
-        }
-
-        function highlightCard(id) {
-            document.querySelectorAll('.stop-card').forEach(el => el.classList.remove('active'));
-            const card = document.getElementById(`card-${id}`);
-            if (card) {
-                card.classList.add('active');
-                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-    </script>
-</body>
-
-</html>
+            ` : `<div class="transport-info end-stop">
