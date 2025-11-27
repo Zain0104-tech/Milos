@@ -274,50 +274,43 @@
             background: #eef2f6;
         }
 
-        /* Marker Styles */
-        .marker-pin {
-            width: 18px;
-            height: 18px;
+        /* Marker Styles - Final Static Optimized Version */
+        .custom-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px !important;
+            height: 30px !important;
             border-radius: 50%;
             background: var(--accent-color);
-            border: 3px solid #ffffff;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1; 
+            border: 4px solid #ffffff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: transform 0.2s; /* Still allow hover effects if needed */
         }
         
-        .marker-pin.origin {
+        .custom-marker.origin {
             background: var(--origin-color); 
         }
-        .marker-pin.error-time {
+        .custom-marker.error-time {
             background: var(--route-color); 
         }
 
-        .marker-pulse {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 18px; height: 18px;
-            background: rgba(13, 110, 253, 0.4); 
-            border-radius: 50%;
-            animation: pulse 2s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        /* Marker icons/labels */
+        .custom-marker i {
+            font-size: 1.1rem;
+        }
+        .custom-marker span {
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            margin-top: -2px;
         }
 
-        .marker-pulse.origin {
-             background: rgba(75, 85, 99, 0.4); 
-        }
-        .marker-pulse.error-time {
-             background: rgba(253, 126, 20, 0.4); 
-        }
+        /* Removed @keyframes pulse and marker-pulse classes for optimization */
 
-        @keyframes pulse {
-            0% { width: 18px; height: 18px; opacity: 0.8; }
-            100% { width: 56px; height: 56px; opacity: 0; }
-        }
-
-        /* Popup Styles */
+        /* Popup Styles (Retained) */
         .leaflet-popup-content-wrapper {
             border-radius: 12px;
             box-shadow: 0 6px 18px rgba(0,0,0,0.15);
@@ -364,7 +357,7 @@
             transform: rotate(45deg);
         }
 
-        /* Route Label */
+        /* Route Label (Retained) */
         .route-label {
             background: #ffffff;
             border: 1px solid var(--route-color);
@@ -427,6 +420,7 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <script>
         // --- Bilingual Data Structure ---
         const itineraryData = [
@@ -719,11 +713,19 @@
             card.addEventListener('click', () => focusOnStop(stop.id));
             itineraryList.appendChild(card);
             
-            // 2. Map Marker
-            const pulseClass = isOrigin ? 'origin' : '';
+            // 2. Map Marker - Optimized Static Icon
+            let markerLabel = isOrigin ? '<i class="fas fa-plane-departure"></i>' : `<span>${index}</span>`;
+            if (index > 0 && index < processedItinerary.length) {
+                 markerLabel = `<span>${index}</span>`;
+            } else if (index === processedItinerary.length - 1) {
+                markerLabel = '<i class="fas fa-flag-checkered"></i>';
+            } else {
+                markerLabel = '<i class="fas fa-plane-departure"></i>';
+            }
+
             const customIcon = L.divIcon({
-                className: 'custom-marker',
-                html: `<div class="marker-pulse ${pulseClass}"></div><div class="marker-pin ${pulseClass}"></div>`,
+                className: `custom-marker ${isOrigin ? 'origin' : ''}`,
+                html: markerLabel,
                 iconSize: [30, 30],
                 iconAnchor: [15, 15]
             });
@@ -745,17 +747,16 @@
             markers[stop.id] = marker;
             latlngs.push([stop.coords.lat, stop.coords.lng]);
 
-            // 3. Route Line (L.Polyline - Lightweight Fix)
+            // 3. Route Line (L.Polyline - Lightweight)
             if (index < processedItinerary.length - 1) {
                 const nextStop = processedItinerary[index + 1];
                 const routePoints = [[stop.coords.lat, stop.coords.lng], [nextStop.coords.lat, nextStop.coords.lng]];
                 
-                // --- 优化替换：使用 L.polyline 替换 Ant Path ---
                 L.polyline(routePoints, {
                     weight: 5,
-                    color: var(--route-color), // Bright Orange
+                    color: '#fd7e14', /* Using direct hex for speed */
                     opacity: 0.9,
-                    dashArray: '10, 15', // 虚线效果，模拟科技感路线
+                    dashArray: '10, 15', 
                     lineJoin: 'round'
                 }).addTo(map);
 
